@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.junit.Test;
@@ -72,5 +73,33 @@ public class HttpClientTest {
         //5.关闭资源
         response.close();
         httpClient.close();
+    }
+    @Test
+    public void testPool() throws IOException {
+        //1.创建HttpClient连接管理器
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        //2.设置参数
+        cm.setMaxTotal(200);//设置最大连接数
+        cm.setDefaultMaxPerRoute(20);//设置每个主机的最大并发
+        doGet(cm);
+        doGet(cm);
+    }
+    private void doGet(PoolingHttpClientConnectionManager cm) throws IOException {
+        //3.从连接池中获取HttpClient对象
+        CloseableHttpClient httpClient = HttpClients.custom().setConnectionManager(cm).build();
+        //在这里加上断点，观察HttpClient对象
+        //4.创建HttpGet对象
+        HttpGet httpGet = new HttpGet("https://www.itcast.cn");
+        //5.发送请求
+        CloseableHttpResponse response = httpClient.execute(httpGet);
+        //6.获取数据
+        if (response.getStatusLine().getStatusCode()==200) {
+            String html = EntityUtils.toString(response.getEntity(), "UTF-8");
+            System.out.println(html);
+        }
+        //7.关闭资源
+        response.close();
+//        httpClient.close();//注意这里不要关闭HttpClient对象，因为使用连接池，HttpClient对象使用完之后应该要换回池中，而不是关掉
+
     }
 }
