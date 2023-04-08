@@ -70,4 +70,42 @@ public class JsoupTest {
         //获取元素中的文本内容
         System.out.println(element.text());
     }
+
+    //Jsoup选择器,注意不同的用法规则. # 【】
+    @Test
+    public void testSelect() throws IOException {
+        Document doc = Jsoup.parse(new File("jsoup.html"), "UTF-8");
+        //根据标签名获取/选择元素
+        Elements spans = doc.select("span");
+        for (Element span : spans) {
+            System.out.println(span.text());
+        }
+        //根据id获取元素
+        System.out.println(doc.select("#city_bj").text());
+        //根据class获取元素
+        System.out.println(doc.select(".class_a").text());
+        //根据属性获取元素
+        System.out.println(doc.select("[abc]").text());
+        //根据属性值获取元素
+        System.out.println(doc.select("[class=s_name]").text());
+    }
+    //Jsoup选择器的高级用法
+    @Test
+    public void testSelect2() throws IOException {
+        Document doc = Jsoup.parse(new File("jsoup.html"), "UTF-8");
+        //根据元素标签名+id组合选取元素
+        System.out.println(doc.select("li#test").text());
+        //根据元素标签名+class组合选取元素
+        System.out.println(doc.select("li.class_a").text());
+        //根据标签名+元素名
+        System.out.println(doc.select("span[abc]").text());
+        //任意组合
+        System.out.println(doc.select("span[abc].s_name").text());
+        //查找某个元素的直接子元素
+        System.out.println(doc.select(".city_con > ul > li").text());
+        //查找某个元素的所有子元素
+        System.out.println(doc.select(".city_con li").text());
+        //查找某个元素的所有直接子元素
+        System.out.println(doc.select(".city_con > *").text());
+    }
 }
