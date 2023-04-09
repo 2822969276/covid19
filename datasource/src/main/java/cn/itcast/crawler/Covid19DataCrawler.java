@@ -1,5 +1,6 @@
 package cn.itcast.crawler;
 
+import cn.itcast.DatasourceApplication;
 import cn.itcast.bean.CovidBean;
 import cn.itcast.util.HttpUtils;
 import cn.itcast.util.TimeUtils;
@@ -8,6 +9,10 @@ import com.alibaba.fastjson.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -16,7 +21,17 @@ import java.util.regex.Pattern;
 /**
  * 实现疫情数据爬取
  */
+@RunWith(SpringJUnit4ClassRunner.class)
+@SpringBootTest(classes= DatasourceApplication.class)
 public class Covid19DataCrawler {
+    @Autowired
+    private KafkaTemplate kafkaTemplate;
+
+    @Test
+    public void testKafkaTemplate() throws InterruptedException {
+        kafkaTemplate.send("test", 1, "abc");
+        Thread.sleep(10000000);
+    }
     //后续需要将方法改为定时任务，如每天8点定时爬取疫情数据
     @Test
     public void test(){
