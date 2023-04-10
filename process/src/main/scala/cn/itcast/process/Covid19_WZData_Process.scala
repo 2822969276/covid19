@@ -11,6 +11,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import java.lang
+import java.sql.{Connection, DriverManager, PreparedStatement}
 import scala.collection.mutable
 
 /**
@@ -169,10 +170,46 @@ object Covid19_WZData_Process {
         }
         val resultDS: DStream[(String, (Int, Int, Int, Int, Int, Int))] = tupleDS.updateStateByKey(updateFunc)
 
-
-
         //5.将处理分析的结果存入到Mysql
-
+        /*
+        CREATE TABLE `covid19_wz`(
+            `name` varchar(12) NOT NULL DEFAULT '',
+            `cg` int(11) DEFAULT '0',
+            `xb` int(11) DEFAULT '0',
+            `jz` int(11) DEFAULT '0',
+            `xh` int(11) DEFAULT '0',
+            `xq` int(11) DEFAULT '0',
+            `kc` int(11) DEFAULT '0',
+            PRIMARY KEY (`name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+         */
+        resultDS.foreachRDD(
+            rdd => {
+                rdd.foreachPartition(
+                    lines => {
+                        //1.开启连接
+                        val conn: Connection = DriverManager.getConnection("jdbc:mysql://192.168.80.80:3306/bigdata", "root", "000000")
+                        //2.编写sql并获取ps
+                        val sql:String = "replace into covid19_wz(name,cg,xb,jz,xh,xq,kc) values(?,?,?,?,?,?,?);"
+                        val ps: PreparedStatement = conn.prepareStatement(sql)
+                        //3.设置参数并执行
+                        for (line <- lines){
+                            ps.setString(1,line._1)
+                            ps.setInt(2,line._2._1)
+                            ps.setInt(3,line._2._2)
+                            ps.setInt(4,line._2._3)
+                            ps.setInt(5,line._2._4)
+                            ps.setInt(6,line._2._5)
+                            ps.setInt(7,line._2._6)
+                            ps.executeUpdate()
+                        }
+                        //4.关闭资源
+                        ps.close()
+                        conn.close()
+                    }
+                )
+            }
+        )
         //6.手动提交偏移量
         //我们要手动提交偏移量，那么意味着，消费了一批数据就应该提交一次偏移量
         //在SparkStreaming中数据抽象为DStream，DStream的底层其实也就是RDD，也就是每一批次的数据
