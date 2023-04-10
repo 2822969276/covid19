@@ -12,6 +12,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
@@ -21,19 +23,25 @@ import java.util.regex.Pattern;
 /**
  * 实现疫情数据爬取
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes= DatasourceApplication.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
+//@SpringBootTest(classes= DatasourceApplication.class)
+@Component
 public class Covid19DataCrawler {
     @Autowired
     private KafkaTemplate kafkaTemplate;
 
-    @Test
-    public void testKafkaTemplate() throws InterruptedException {
-        kafkaTemplate.send("test", 1, "abc");
-        Thread.sleep(10000000);
-    }
+//    @Test
+//    public void testKafkaTemplate() throws InterruptedException {
+//        kafkaTemplate.send("test", 1, "abc");
+//        Thread.sleep(10000000);
+//    }
+
+
     //后续需要将方法改为定时任务，如每天8点定时爬取疫情数据
-    @Test
+//    @Scheduled(initialDelay = 1000,fixedDelay = 1000)
+//    @Scheduled(cron = "0/1 * * * * ?")//每隔1s执行
+//    @Scheduled(cron = "0 0 8 * * ?")//每天8点定时执行
+    @Scheduled(cron = "0/5 * * * * ?")//每隔5s执行
     public void test(){
         String datetime = TimeUtils.format(System.currentTimeMillis(), "yyyy-MM-dd");
 
@@ -71,6 +79,9 @@ public class Covid19DataCrawler {
                 bean.setPid(pBean.getLocationId());//把省份ID作为城市的PID
                 bean.setProvinceShortName(pBean.getProvinceShortName());
                 //后续需要将城市疫情数据发送给Kafka
+                //要将javaBean转为jsonStr再发给kafka
+                String beanStr = JSON.toJSONString(bean);
+                kafkaTemplate.send("covid19", bean.getPid(), beanStr);
             }
             //6.获取第一层json（省份数据）中的每一天的统计数据
             String statisticsDataUrl = pBean.getStatisticsData();
@@ -82,6 +93,8 @@ public class Covid19DataCrawler {
             pBean.setStatisticsData(dataStr);
             pBean.setCities(null);
             //后续需要将省份疫情数据发送给Kafka
+            String pBeanStr = JSON.toJSONString(pBean);
+            kafkaTemplate.send("covid19", pBean.getLocationId(), pBeanStr);
         }
 
     }
