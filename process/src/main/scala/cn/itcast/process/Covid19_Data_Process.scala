@@ -1,6 +1,7 @@
 package cn.itcast.process
 
 import cn.itcast.bean.{CovidBean, StatisticsDataBean}
+import cn.itcast.util.BaseJdbcSink
 import com.alibaba.fastjson.JSON
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.spark.SparkContext
@@ -8,6 +9,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql._
 import org.apache.spark.sql.streaming.Trigger
 
+import java.sql.PreparedStatement
 import java.util
 import scala.collection.mutable
 
@@ -37,9 +39,11 @@ object Covid19_Data_Process {
 //          .format("console")//设置输出目的地
 //          .outputMode("append")//输出模式，默认就是append表示显示新增行
 //          .trigger(Trigger.ProcessingTime(0))//触发间隔，0表示尽可能快的执行
-//          .option("truncate",false)
+//          .option("truncate",false)//表示如果列名过长不进行截断
 //          .start()
 //          .awaitTermination()
+        //|{"cityName":"拉萨","confirmedCount":1,"curedCount":1,"currentConfirmedCount":0,"datetime":"2020-05-28","deadCount":0,"locationId":540100,"pid":540000,"provinceShortName":"西藏","suspectedCount":0}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ...
+        //|{"confirmedCount":1,"curedCount":1,"currentConfirmedCount":0,"datetime":"2020-05-28","deadCount":0,"locationId":540000,"provinceName":"西藏自治区","provinceShortName":"西藏","statisticsData":"[{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":1,\"confirmedIncr\":1,\"curedIncr\":0,\"dateId\":20200129,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200130,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200131,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200201,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200202,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200203,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200204,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200205,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200206,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200207,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200208,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200209,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200210,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":1,\"curedCount\":0,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200211,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":-1,\"confirmedIncr\":0,\"curedIncr\":1,\"dateId\":20200212,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200213,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200214,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200215,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200216,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200217,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200218,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200219,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200220,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200221,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200222,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200223,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200224,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200225,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200226,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200227,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200228,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200229,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200301,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200302,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200303,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200304,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200305,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200306,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200307,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200308,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200309,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200310,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspectedCount\":0},{\"confirmedCount\":1,\"currentConfirmedCount\":0,\"curedCount\":1,\"currentConfirmedIncr\":0,\"confirmedIncr\":0,\"curedIncr\":0,\"dateId\":20200311,\"suspectedCountIncr\":0,\"deadCount\":0,\"deadIncr\":0,\"suspect...
 
 
         //3.处理数据
@@ -68,6 +72,23 @@ object Covid19_Data_Process {
                 newList
             }
         )
+        /* statisticsDataDS.writeStream
+           .format("console")//输出目的地
+           .outputMode("append")//输出模式,默认就是append表示显示新增行
+           .trigger(Trigger.ProcessingTime(0))//触发间隔,0表示尽可能快的执行
+           .option("truncate",false)//表示如果列名过长不进行截断
+           .start()
+           .awaitTermination()*/
+        /*
+    +--------+-----------------+----------+--------------+---------------------+--------------------+-------------+----------+---------+------------------+--------------+---------+--------+
+    |dateId  |provinceShortName|locationId|confirmedCount|currentConfirmedCount|currentConfirmedIncr|confirmedIncr|curedCount|curedIncr|suspectedCountIncr|suspectedCount|deadCount|deadIncr|
+    +--------+-----------------+----------+--------------+---------------------+--------------------+-------------+----------+---------+------------------+--------------+---------+--------+
+    |20200122|广西               |450000    |2             |2                    |2                   |2            |0         |0        |0                 |0             |0        |0       |
+    |20200123|广西               |450000    |13            |13                   |11                  |11           |0         |0        |0                 |0             |0        |0       |
+    |20200124|广西               |450000    |23            |23                   |10                  |10           |0         |0        |0                 |0             |0        |0       |
+    |20200125|广西               |450000    |33            |33                   |10                  |10           |0         |0        |0                 |0             |0        |0       |
+         */
+
         //4.统计分析
         //4.1.全国疫情汇总信息：现有确诊，累计确诊。现有疑似，累计治愈，累计死亡--注意：按照日期分组统计
         val result1: DataFrame = provinceDS.groupBy('datetime)
@@ -115,6 +136,50 @@ object Covid19_Data_Process {
           .start()
 //          .awaitTermination()
 
+        /*
++----------+---------------------+--------------+--------------+----------+---------+
+|datetime  |currentConfirmedCount|confirmedCount|suspectedCount|curedCount|deadCount|
++----------+---------------------+--------------+--------------+----------+---------+
+|2020-05-28|111                  |84547         |1476          |79791     |4645     |
++----------+---------------------+--------------+--------------+----------+---------+
+        CREATE TABLE `covid19_1` (
+            `datetime` varchar(20) NOT NULL DEFAULT '',
+            `currentConfirmedCount` bigint(20) DEFAULT '0',
+            `confirmedCount` bigint(20) DEFAULT '0',
+            `suspectedCount` bigint(20) DEFAULT '0',
+            `curedCount` bigint(20) DEFAULT '0',
+            `deadCount` bigint(20) DEFAULT '0',
+            PRIMARY KEY (`datetime`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+         */
+        result1.writeStream
+          .foreach(new BaseJdbcSink("replace into covid19_1 (datetime,currentConfirmedCount,confirmedCount,suspectedCount,curedCount,deadCount) values(?,?,?,?,?,?)") {
+              override def realProcess(sql: String, row: Row): Unit = {
+                  //取出row中的数据
+                  val datetime: String = row.getAs[String]("datetime")
+                  val currentConfirmedCount: Long = row.getAs[Long]("currentConfirmedCount")
+                  val confirmedCount: Long = row.getAs[Long]("confirmedCount")
+                  val suspectedCount: Long = row.getAs[Long]("suspectedCount")
+                  val curedCount: Long = row.getAs[Long]("curedCount")
+                  val deadCount: Long = row.getAs[Long]("deadCount")
+                  //获取预编译语句对象
+                  ps = conn.prepareStatement(sql)
+                  //给sql设置参数值
+                  ps.setString(1, datetime)
+                  ps.setLong(2, currentConfirmedCount)
+                  ps.setLong(3, confirmedCount)
+                  ps.setLong(4, suspectedCount)
+                  ps.setLong(5, curedCount)
+                  ps.setLong(6, deadCount)
+                  ps.executeUpdate()
+              }
+          })
+          .outputMode("complete")
+          .trigger(Trigger.ProcessingTime(0))
+          .option("truncate", false)
+          .start()
+
         result2.writeStream
           .format("console")
           .outputMode("complete")
@@ -123,6 +188,57 @@ object Covid19_Data_Process {
           .start()
 //          .awaitTermination()
 
+        /*
++----------+----------+-----------------+---------------------+--------------+--------------+----------+---------+
+|datetime  |locationId|provinceShortName|currentConfirmedCount|confirmedCount|suspectedCount|curedCount|deadCount|
++----------+----------+-----------------+---------------------+--------------+--------------+----------+---------+
+|2020-05-28|810000    |香港               |27                   |1066          |47            |1035      |4        |
+|2020-05-28|630000    |青海               |0                    |18            |0             |18        |0        |
+|2020-05-28|540000    |西藏               |0                    |1             |0             |1         |0        |
+|2020-05-28|820000    |澳门               |0                    |45            |9             |45        |0        |
+  ...
+    CREATE TABLE `covid19_2` (
+      `datetime` varchar(20) NOT NULL DEFAULT '',
+      `locationId` int(11) NOT NULL DEFAULT '0',
+      `provinceShortName` varchar(20) DEFAULT '',
+      `cityName` varchar(20) DEFAULT '',
+      `currentConfirmedCount` int(11) DEFAULT '0',
+      `confirmedCount` int(11) DEFAULT '0',
+      `suspectedCount` int(11) DEFAULT '0',
+      `curedCount` int(11) DEFAULT '0',
+      `deadCount` int(11) DEFAULT '0',
+      `pid` int(11) DEFAULT '0',
+      PRIMARY KEY (`datetime`,`locationId`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+         */
+        result2.writeStream
+          .foreach(new BaseJdbcSink("replace into covid19_2 (datetime,locationId,provinceShortName,currentConfirmedCount,confirmedCount,suspectedCount,curedCount,deadCount) values(?,?,?,?,?,?,?,?)") {
+              override def realProcess(sql: String, row: Row): Unit = {
+                  val datetime: String = row.getAs[String]("datetime")
+                  val locationId: Int = row.getAs[Int]("locationId")
+                  val provinceShortName: String = row.getAs[String]("provinceShortName")
+                  val currentConfirmedCount: Int = row.getAs[Int]("currentConfirmedCount")
+                  val confirmedCount: Int = row.getAs[Int]("confirmedCount")
+                  val suspectedCount: Int = row.getAs[Int]("suspectedCount")
+                  val curedCount: Int = row.getAs[Int]("curedCount")
+                  val deadCount: Int = row.getAs[Int]("deadCount")
+                  ps = conn.prepareStatement(sql)
+                  ps.setString(1, datetime)
+                  ps.setInt(2, locationId)
+                  ps.setString(3, provinceShortName)
+                  ps.setInt(4, currentConfirmedCount)
+                  ps.setInt(5, confirmedCount)
+                  ps.setInt(6, suspectedCount)
+                  ps.setInt(7, curedCount)
+                  ps.setInt(8, deadCount)
+                  ps.executeUpdate()
+              }
+          })
+          .outputMode("append")
+          .trigger(Trigger.ProcessingTime(0))
+          .option("truncate", false)
+          .start()
+
         result3.writeStream
           .format("console")
           .outputMode("complete")
@@ -130,6 +246,54 @@ object Covid19_Data_Process {
           .option("truncate", false)
           .start()
 //          .awaitTermination()
+        /*
++--------+-------------+--------------+--------------+----------+---------+
+|dateId  |confirmedIncr|confirmedCount|suspectedCount|curedCount|deadCount|
++--------+-------------+--------------+--------------+----------+---------+
+|20200413|99           |83696         |415           |78262     |3351     |
+|20200218|1749         |74277         |0             |14378     |2006     |
+|20200314|27           |81048         |0             |67022     |3204     |
+|20200311|25           |80980         |0             |62874     |3173     |
+|20200202|2830         |17238         |0             |478       |361      |
+|20200217|1896         |72528         |0             |12557     |1870     |
+...
+    CREATE TABLE `covid19_3` (
+      `dateId` varchar(20) NOT NULL DEFAULT '',
+      `confirmedIncr` bigint(20) DEFAULT '0',
+      `confirmedCount` bigint(20) DEFAULT '0',
+      `suspectedCount` bigint(20) DEFAULT '0',
+      `curedCount` bigint(20) DEFAULT '0',
+      `deadCount` bigint(20) DEFAULT '0',
+      PRIMARY KEY (`dateId`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+         */
+        result3.writeStream
+          .foreach(new BaseJdbcSink("replace into covid19_3 (dateId,confirmedIncr,confirmedCount,suspectedCount,curedCount,deadCount) values(?,?,?,?,?,?)") {
+              override def realProcess(sql: String, row: Row): Unit = {
+                  //取出row中的数据
+                  val dateId: String = row.getAs[String]("dateId")
+                  val confirmedIncr: Long = row.getAs[Long]("confirmedIncr")
+                  val confirmedCount: Long = row.getAs[Long]("confirmedCount")
+                  val suspectedCount: Long = row.getAs[Long]("suspectedCount")
+                  val curedCount: Long = row.getAs[Long]("curedCount")
+                  val deadCount: Long = row.getAs[Long]("deadCount")
+                  //获取预编译语句对象
+                  ps = conn.prepareStatement(sql)
+                  //给sql设置参数值
+                  ps.setString(1, dateId)
+                  ps.setLong(2, confirmedIncr)
+                  ps.setLong(3, confirmedCount)
+                  ps.setLong(4, suspectedCount)
+                  ps.setLong(5, curedCount)
+                  ps.setLong(6, deadCount)
+                  ps.executeUpdate()
+              }
+          })
+          .outputMode("complete")
+          .trigger(Trigger.ProcessingTime(0))
+          .option("truncate", false)
+          .start()
+
 
         result4.writeStream
           .format("console")
@@ -138,10 +302,93 @@ object Covid19_Data_Process {
           .option("truncate", false)
           .start()
 //          .awaitTermination()
+        /*
++----------+-----------------+------+--------------+
+|datetime  |provinceShortName|pid   |confirmedCount|
++----------+-----------------+------+--------------+
+|2020-05-28|黑龙江              |230000|386           |
+|2020-05-28|上海               |310000|330           |
+|2020-05-28|北京               |110000|174           |
+|2020-05-28|内蒙古              |150000|155           |
+|2020-05-28|山西               |140000|64            |
+|2020-05-28|陕西               |610000|63            |
+....
+        CREATE TABLE `covid19_4` (
+            `datetime` varchar(20) NOT NULL DEFAULT '',
+            `provinceShortName` varchar(20) NOT NULL DEFAULT '',
+            `pid` int(11) DEFAULT '0',
+            `confirmedCount` bigint(20) DEFAULT '0',
+            PRIMARY KEY (`datetime`,`provinceShortName`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+         */
+        result4.writeStream
+          .foreach(new BaseJdbcSink("replace into covid19_4 (datetime,provinceShortName,pid,confirmedCount) values(?,?,?,?)") {
+              override def realProcess(sql: String, row: Row): Unit = {
+                  //取出row中的数据
+                  val datetime: String = row.getAs[String]("datetime")
+                  val provinceShortName: String = row.getAs[String]("provinceShortName")
+                  val pid: Int = row.getAs[Int]("pid")
+                  val confirmedCount: Long = row.getAs[Long]("confirmedCount")
+                  //获取预编译语句对象
+                  ps = conn.prepareStatement(sql)
+                  //给sql设置参数值
+                  ps.setString(1, datetime)
+                  ps.setString(2, provinceShortName)
+                  ps.setInt(3, pid)
+                  ps.setLong(4, confirmedCount)
+                  ps.executeUpdate()
+              }
+          })
+          .outputMode("complete")
+          .trigger(Trigger.ProcessingTime(0))
+          .option("truncate", false)
+          .start()
 
         result5.writeStream
           .format("console")
           .outputMode("complete")
+          .trigger(Trigger.ProcessingTime(0))
+          .option("truncate", false)
+          .start()
+//          .awaitTermination()
+        /*
++----------+----------+-----------------+--------+---------------------+--------------+--------------+----------+---------+
+|datetime  |locationId|provinceShortName|cityName|currentConfirmedCount|confirmedCount|suspectedCount|curedCount|deadCount|
++----------+----------+-----------------+--------+---------------------+--------------+--------------+----------+---------+
+|2020-05-28|110105    |北京               |朝阳区     |75                   |75            |0             |0         |0        |
+|2020-05-28|110108    |北京               |海淀区     |64                   |64            |0             |0         |0        |
+|2020-05-28|110102    |北京               |西城区     |53                   |53            |0             |0         |0        |
+|2020-05-28|110106    |北京               |丰台区     |40                   |43            |0             |3         |0        |
+|2020-05-28|110115    |北京               |大兴区     |23                   |39            |0             |16        |0        |
+....
+         */
+
+        result5.writeStream
+          .foreach(new BaseJdbcSink("replace into covid19_5 (datetime,locationId,provinceShortName,cityName,currentConfirmedCount,confirmedCount,suspectedCount,curedCount,deadCount) values(?,?,?,?,?,?,?,?,?)") {
+              override def realProcess(sql: String, row: Row): Unit = {
+                  val datetime: String = row.getAs[String]("datetime")
+                  val locationId: Int = row.getAs[Int]("locationId")
+                  val provinceShortName: String = row.getAs[String]("provinceShortName")
+                  val cityName: String = row.getAs[String]("cityName")
+                  val currentConfirmedCount: Int = row.getAs[Int]("currentConfirmedCount")
+                  val confirmedCount: Int = row.getAs[Int]("confirmedCount")
+                  val suspectedCount: Int = row.getAs[Int]("suspectedCount")
+                  val curedCount: Int = row.getAs[Int]("curedCount")
+                  val deadCount: Int = row.getAs[Int]("deadCount")
+                  ps = conn.prepareStatement(sql)
+                  ps.setString(1, datetime)
+                  ps.setInt(2, locationId)
+                  ps.setString(3, provinceShortName)
+                  ps.setString(4, cityName)
+                  ps.setInt(5, currentConfirmedCount)
+                  ps.setInt(6, confirmedCount)
+                  ps.setInt(7, suspectedCount)
+                  ps.setInt(8, curedCount)
+                  ps.setInt(9, deadCount)
+                  ps.executeUpdate()
+              }
+          })
+          .outputMode("append")
           .trigger(Trigger.ProcessingTime(0))
           .option("truncate", false)
           .start()
